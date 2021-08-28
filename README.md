@@ -5,6 +5,7 @@ This is achieved employing Linux socket programming(uses TCP/IP protocol suite) 
 Linux OS(V 16.04 or up) running on the host machine or in a virtual machine with updated **gcc/g++ compilers** installed.
 # Complilation notes:
 Open 2 terminals and navigate to the respective server and client directory and compile the programs using the following commands.
+
 **For server**
 ```sh
 g++ -g -Wall -std=c++14 shared_mem.cpp server_main.cpp server.cpp -o server
