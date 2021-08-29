@@ -23,6 +23,6 @@ g++ -g -Wall -std=c++14 client_main.cpp client.cpp -o client
 ```sh
 ./client
 ```
-*please note:* run server first and then run client
+*Please note:* run server first before running client
 ## Expected output:
 Please refer to **OutputImages folder** in the repo.
