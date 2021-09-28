@@ -136,6 +136,10 @@ int AddToDataBase(SharedMemory &DataBase,data Data)
     if (DataBase.CreateSharedMemory () == FAILED_)
         cout << "[INFO]: Shared memory already exists" << endl;
 
+    //create semaphore object if exist open it.
+     if (DataBase.CreateSemaphore() == FAILED_)
+        cout << "[INFO]: semaphore already exists" << endl;
+
     //attach to the shared memory to append client data.
     if (DataBase.AttachToMemory () == FAILED_)
     {
@@ -168,6 +172,10 @@ int FindData(SharedMemory &DataBase,data Data,int &position)
 
     if (DataBase.CreateSharedMemory() == FAILED_)
         cout << "[INFO]: Shared memory already exists" << endl;
+
+    if (DataBase.CreateSemaphore() == FAILED_)
+        cout << "[INFO]: semaphore already exists" << endl;
+
     if (DataBase.AttachToMemory() == FAILED_)
     {
         cout << "[ERROR]: Attaching to shared memory failed" <<endl;
@@ -189,6 +197,10 @@ int EditDataBase(SharedMemory &DataBase,data Data,int position)
 
     if (DataBase.CreateSharedMemory() == FAILED_)
         cout << "[INFO]: Shared memory already exists" << endl;
+
+    if (DataBase.CreateSemaphore() == FAILED_)
+        cout << "[INFO]: semaphore already exists" << endl;
+
     if (DataBase.AttachToMemory() == FAILED_)
     {
         cout << "[ERROR]: Attaching to shared memory failed" <<endl;
@@ -211,6 +223,9 @@ int DeleteFromDatabase(SharedMemory &DataBase,data Data)
 
     if (DataBase.CreateSharedMemory () == FAILED_)
         cout << "[INFO]: Shared memory already exists" << endl;
+
+    if (DataBase.CreateSemaphore() == FAILED_)
+        cout << "[INFO]: semaphore already exists" << endl;
     if (DataBase.AttachToMemory () == FAILED_)
     {
         cout << "[ERROR]: Attaching to shared memory failed" <<endl;
