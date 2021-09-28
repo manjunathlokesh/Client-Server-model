@@ -8,7 +8,7 @@ Open two terminals and navigate to the respective server and client directory an
 
 **For server**
 ```sh
-g++ -g -Wall -std=c++14 shared_mem.cpp server_main.cpp server.cpp -o server
+g++ -g -Wall -std=c++14 shared_mem.cpp server_main.cpp server.cpp -o server -lpthread
 ```
 **For client**
 ```sh
