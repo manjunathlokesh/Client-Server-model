@@ -2,7 +2,7 @@
 Author      : Manjunath B L
 Date        : 28/08/2021
 Description : All class function  definitions and hadler functions reside here 
-**********************************************************************************/
+ **********************************************************************************/
 
 #include "shared_mem.h"
 
@@ -39,35 +39,45 @@ int SharedMemory::AttachToMemory()
 int SharedMemory::AddData(struct Data data)
 {
     //populating data into the structure.
-    strcpy(this->data->name[this->data->synnum],data.name);
-    this->data->number[this->data->synnum]=data.number;
-    this->data->synnum++;
-    //unlock semaphore object.
-    sem_post(this->semobj);
+    if(!sem_wait(this->semobj))
+    {
+        strcpy(this->data->name[this->data->synnum],data.name);
+        this->data->number[this->data->synnum]=data.number;
+        this->data->synnum++;
+        //unlock semaphore object.
+        sem_post(this->semobj);
+    }
     return SUCCESS;
 }
 int SharedMemory::FindData(struct Data data,int &position)
 {
     //finding data in database.
-    for(int i=0;i<MAX_MEM_SIZE;i++)
+    if(!sem_wait(this->semobj))
     {
-        if(!(strcmp(this->data->name[i],data.name)))
+        for(int i=0;i<MAX_MEM_SIZE;i++)
         {
-            position=i;
-            sem_post(this->semobj);
-            return SUCCESS;
+            if(!(strcmp(this->data->name[i],data.name)))
+            {
+
+                position=i;
+                sem_post(this->semobj);
+                return SUCCESS;
+            }
         }
+        //unlock semaphore object.
+        sem_post(this->semobj);
     }
-    //unlock semaphore object.
-    sem_post(this->semobj);
     return FAILED_;
 }
 int SharedMemory::EditData(struct Data data,int position)
 {
     //change the old name to new name in position found by find.
-    strcpy(this->data->name[position],data.name);
-    //unlock semaphore object
-    sem_post(this->semobj);
+    if(!sem_wait(this->semobj))
+    {
+        strcpy(this->data->name[position],data.name);
+        //unlock semaphore object
+        sem_post(this->semobj);
+    }
     return SUCCESS;
 }
 
@@ -75,22 +85,25 @@ int SharedMemory::DeleteData(struct Data data)
 {
     //find the data to delete and also adjust the space so that there are no leakage.
     //this is an O(n^2) solution need to improve it future to atleast O(n).
-    for(int i=0;i<MAX_MEM_SIZE;i++)
+    if(!sem_wait(this->semobj))
     {
-        if(!(strcmp(this->data->name[i],data.name)))
+        for(int i=0;i<MAX_MEM_SIZE;i++)
         {
-            for(int j=i;j<MAX_MEM_SIZE-1;j++)
+            if(!(strcmp(this->data->name[i],data.name)))
             {
-                strcpy(this->data->name[j],this->data->name[j+1]);
-                this->data->number[j]=this->data->number[j+1];
+                for(int j=i;j<MAX_MEM_SIZE-1;j++)
+                {
+                    strcpy(this->data->name[j],this->data->name[j+1]);
+                    this->data->number[j]=this->data->number[j+1];
+                }
+                this->data->synnum--;
+                sem_post(this->semobj);
+                return SUCCESS;
             }
-            this->data->synnum--;
-            sem_post(this->semobj);
-            return SUCCESS;
         }
+        //unlock semaphore object
+        sem_post(this->semobj);
     }
-    //unlock semaphore object
-    sem_post(this->semobj);
     return FAILED_;
 }
 
