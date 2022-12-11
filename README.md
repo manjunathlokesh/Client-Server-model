@@ -1,6 +1,6 @@
 # Client-Server-model
 A Linux based distributed application comprising server, client and its very own database which can handle multiple clients. Giving client features like adding, deleting and modifying data in server database.
-This is achieved employing Linux socket programming(uses TCP/IP protocol suite) and shared memory IPC.
+This is achieved employing Linux socket programming(uses TCP/IP protocol suite),shared memory IPC and semaphore.
 # Software requirments:
 Linux OS(V 16.04 or up) running on the host machine or in a virtual machine with latest **gcc/g++ compilers** installed.
 # Compilation notes:
@@ -8,11 +8,11 @@ Open two terminals and navigate to the respective server and client directory an
 
 **For server**
 ```sh
-g++ -g -Wall -std=c++14 shared_mem.cpp server_main.cpp server.cpp -o server -lpthread
+make server
 ```
 **For client**
 ```sh
-g++ -g -Wall -std=c++14 client_main.cpp client.cpp -o client
+make client
 ```
 ## Running the program:
 **server side:**
