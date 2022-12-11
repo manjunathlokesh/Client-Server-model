@@ -8,6 +8,8 @@ Description : class, structures declarations and library files reside here.
 #define SHAREDMEMORY_H
 
 #include <sys/shm.h>
+#include <semaphore.h>
+#include <sys/fcntl.h>
 #include <cstring>
 #include "server.h"
 #define MAX_MEM_SIZE 100
@@ -30,6 +32,7 @@ class SharedMemory
     public:
         SharedMemory():data(nullptr){};
         int CreateSharedMemory();
+        int CreateSemaphore();
         int AttachToMemory();
         int AddData(struct Data data);
         int FindData(struct Data data,int &position);
@@ -39,6 +42,7 @@ class SharedMemory
         void CheckData();
     private:
         int shmid;
+        sem_t* semobj;
         UserData *data;
 
 };
