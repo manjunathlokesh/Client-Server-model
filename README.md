@@ -1,5 +1,5 @@
 # Client-Server-model
-A Linux based distributed application comprising server, client and its very own database. Giving client features like adding, deleting and modifying data in server database
+A Linux based distributed application comprising server, client and its very own database which can handle multiple clients. Giving client features like adding, deleting and modifying data in server database.
 This is achieved employing Linux socket programming(uses TCP/IP protocol suite) and shared memory IPC.
 # Software requirments:
 Linux OS(V 16.04 or up) running on the host machine or in a virtual machine with updated **gcc/g++ compilers** installed.
