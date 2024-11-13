@@ -42,92 +42,101 @@ int SocketServer::Listen ()
         return FAILED_;
     return SUCCESS;
 }
+void* SocketServer::connection_handler(void* con_obj)
+{
+    SharedMemory DataBase;
+    connections *obj=static_cast<connections*>(con_obj);
+    //recv function reads from data socket file discriptor and populates it to structure of type data.
+    recv(obj->data_socket_fd,(data *)&(obj->Data),sizeof(data), 0);
+    cout<<obj->data_socket_fd<<obj->Data.choice<<endl;
+    switch (obj->Data.choice)
+    {
+        //switch accoding to client requested functionality.
+        case ADD:
+            {
+                //Add client data to database and ackknowledge client.
+                if(AddToDataBase(DataBase,obj->Data) == FAILED_)
+                    send(obj->data_socket_fd,(void*)FAILURE_MSG,MSG_SIZE,0);
+                else
+                    send(obj->data_socket_fd,(void*)SUCCESS_MSG,MSG_SIZE,0);
+                break;
+            }
+        case EDIT:
+            {
+
+                int position{0};
+
+				//First find the data is available or not to edit.
+				if(FindData(DataBase,obj->Data,position) == FAILED_)
+				{
+					send(obj->data_socket_fd,(void*)FAILURE_MSG,MSG_SIZE,0);
+				}
+				else
+				{
+					//If data is found again receive the data to edit.
+					send(obj->data_socket_fd,(void*)SUCCESS_MSG,MSG_SIZE,0);
+					recv(obj->data_socket_fd,(data *)&(obj->Data),sizeof(data),0);
+
+					//send acknowledgment to client whether edit success or failure.
+					if(EditDataBase(DataBase,obj->Data,position) == FAILED_)
+					{
+
+						send(obj->data_socket_fd,(void*)FAILURE_MSG,MSG_SIZE,0);
+					}
+					else
+						send(obj->data_socket_fd,(void*)SUCCESS_MSG,MSG_SIZE,0);
+				}
+				break;
+            }
+        case DELETE:
+            {
+                //delete the data requested by the client.
+                if(DeleteFromDatabase(DataBase,obj->Data) == FAILED_)
+                    send(obj->data_socket_fd,(void*)FAILURE_MSG,MSG_SIZE,0);
+                else
+                    send(obj->data_socket_fd,(void*)SUCCESS_MSG,MSG_SIZE,0);
+                break;
+            }
+        default:
+            cout<<"[ERROR]: Invalid choice "<<obj->data_socket_fd<<endl;
+
+    }
+    close (obj->data_socket_fd);
+    return NULL;
+
+}
+void SocketServer::create_worker_thread(int connection_count)
+{
+    if (pthread_create(&this->connection_threads[this->connection_count], NULL,SocketServer::connection_handler,&this->user_data[connection_count]) != 0)
+        cout<<"[ERROR]: failed to create worker thread"<<endl;
+    if(this->connection_count > 99)
+    {
+        for(int i=0;i<100;i++)
+            pthread_join(this->connection_threads[i],NULL);
+    }
+}
 
 void SocketServer::Accept ()
 {
-    int pid;
     cout<<"[INFO]: Server is Running"<<endl;
     while (1)
     {
         //accept is a blocking call it will accept the connection and wait for other connections
         //return from accept means three way hand shake is completed i.e SYN,SYN-ACK,ACK.
-        this->data_socket_fd = accept (this->socket_fd, (struct sockaddr *) NULL, NULL);
+        this->user_data[connection_count].data_socket_fd= accept (this->socket_fd, (struct sockaddr *) NULL, NULL);
 
-        if (this->data_socket_fd > 0)
-            cout << "[INFO]: Connection accepted with ID: " << this->data_socket_fd << endl;
+        if (this->user_data[this->connection_count].data_socket_fd > 0)
+            cout << "[INFO]: Connection accepted with ID: " << this->user_data[this->connection_count].data_socket_fd << endl;
         else
             cout << "[ERROR]: Connection Not accepted\n" << endl;
-
-        pid = fork ();
-
-        //child process handeles the current connection while parent process waits for new connections.
-        if (pid == 0)
+        create_worker_thread(this->connection_count);
+        this->connection_count++;
+        if(this->connection_count >= 99)
         {
-            //Sharedmemory class object is responsible for handling API's of our database.
-            SharedMemory DataBase;
-
-            //recv function reads from data socket file discriptor and populates it to structure of type data.
-            recv(this->data_socket_fd,(data *)&(this->Data),sizeof(data), 0);
-
-            switch (this->Data.choice)
-            {
-
-                //switch accoding to client requested functionality.
-                case ADD:
-                    {
-
-                        //Add client data to database and ackknowledge client.
-                        if(AddToDataBase(DataBase,this->Data) == FAILED_)
-                            send(this->data_socket_fd,(void*)FAILURE_MSG,MSG_SIZE,0);
-                        else
-                            send(this->data_socket_fd,(void*)SUCCESS_MSG,MSG_SIZE,0);
-                        break;
-                    }
-                case EDIT:
-                    {
-
-                        int position{0};
-                        
-                        //First find the data is available or not to edit.
-                        if(FindData(DataBase,this->Data,position) == FAILED_)
-                        {
-                            send(this->data_socket_fd,(void*)FAILURE_MSG,MSG_SIZE,0);
-                        }
-                        else
-                        {
-                            //If data is found again receive the data to edit.
-                            send(this->data_socket_fd,(void*)SUCCESS_MSG,MSG_SIZE,0);
-                            recv(this->data_socket_fd,(data *)&(this->Data),sizeof(data),0);
-
-                            //send acknowledgment to client whether edit success or failure.
-                            if(EditDataBase(DataBase,this->Data,position) == FAILED_)
-                            {
-
-                                send(this->data_socket_fd,(void*)FAILURE_MSG,MSG_SIZE,0);
-                            }
-                            else
-                                send(this->data_socket_fd,(void*)SUCCESS_MSG,MSG_SIZE,0);
-                        }
-                        break;
-                    }
-                case DELETE:
-                    {
-                        //delete the data requested by the client.
-                        if(DeleteFromDatabase(DataBase,this->Data) == FAILED_)
-                            send(this->data_socket_fd,(void*)FAILURE_MSG,MSG_SIZE,0);
-                        else
-                            send(this->data_socket_fd,(void*)SUCCESS_MSG,MSG_SIZE,0);
-                        break;
-                    }
-                default:
-                    cout<<"[ERROR]: Invalid choice"<<endl;
-
-            }
-            //close the socket of the running client.
-            close (this->data_socket_fd);
-            //exit from the child.
-            exit (0);
+            cout << "[INFO]: MAX connection limit reached" << endl;
+            break;
         }
+
     }
 }
 int AddToDataBase(SharedMemory &DataBase,data Data)
@@ -135,10 +144,6 @@ int AddToDataBase(SharedMemory &DataBase,data Data)
     //create shared memory if exists open it.
     if (DataBase.CreateSharedMemory () == FAILED_)
         cout << "[INFO]: Shared memory already exists" << endl;
-
-    //create semaphore object if exist open it.
-     if (DataBase.CreateSemaphore() == FAILED_)
-        cout << "[INFO]: semaphore already exists" << endl;
 
     //attach to the shared memory to append client data.
     if (DataBase.AttachToMemory () == FAILED_)
@@ -173,9 +178,6 @@ int FindData(SharedMemory &DataBase,data Data,int &position)
     if (DataBase.CreateSharedMemory() == FAILED_)
         cout << "[INFO]: Shared memory already exists" << endl;
 
-    if (DataBase.CreateSemaphore() == FAILED_)
-        cout << "[INFO]: semaphore already exists" << endl;
-
     if (DataBase.AttachToMemory() == FAILED_)
     {
         cout << "[ERROR]: Attaching to shared memory failed" <<endl;
@@ -198,9 +200,6 @@ int EditDataBase(SharedMemory &DataBase,data Data,int position)
     if (DataBase.CreateSharedMemory() == FAILED_)
         cout << "[INFO]: Shared memory already exists" << endl;
 
-    if (DataBase.CreateSemaphore() == FAILED_)
-        cout << "[INFO]: semaphore already exists" << endl;
-
     if (DataBase.AttachToMemory() == FAILED_)
     {
         cout << "[ERROR]: Attaching to shared memory failed" <<endl;
@@ -220,17 +219,17 @@ int EditDataBase(SharedMemory &DataBase,data Data,int position)
 }
 int DeleteFromDatabase(SharedMemory &DataBase,data Data)
 {
+    cout <<"[ERROR] entered delete data" <<endl;
 
     if (DataBase.CreateSharedMemory () == FAILED_)
         cout << "[INFO]: Shared memory already exists" << endl;
 
-    if (DataBase.CreateSemaphore() == FAILED_)
-        cout << "[INFO]: semaphore already exists" << endl;
     if (DataBase.AttachToMemory () == FAILED_)
     {
         cout << "[ERROR]: Attaching to shared memory failed" <<endl;
         return FAILED_;
     }
+    cout <<"[ERROR] before entering shared memeory function" <<endl;
     if (DataBase.DeleteData (Data) == SUCCESS)
     {
         cout << "[INFO]: Contact list after deleteion" << endl;
@@ -239,7 +238,11 @@ int DeleteFromDatabase(SharedMemory &DataBase,data Data)
     else
     {
         if (DataBase.DetachFromMemory () == FAILED_)
+        {
             cout <<"[INFO]: Detaching from the shared memory Failed" <<endl;
+        }
+
+        cout <<"[ERROR]: DELETE DATA FAILED" <<endl;
         return FAILED_;
     }
     if (DataBase.DetachFromMemory () == FAILED_)

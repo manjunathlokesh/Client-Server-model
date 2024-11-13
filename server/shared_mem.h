@@ -32,7 +32,6 @@ class SharedMemory
     public:
         SharedMemory():data(nullptr){};
         int CreateSharedMemory();
-        int CreateSemaphore();
         int AttachToMemory();
         int AddData(struct Data data);
         int FindData(struct Data data,int &position);
@@ -42,7 +41,7 @@ class SharedMemory
         void CheckData();
     private:
         int shmid;
-        sem_t* semobj;
+        pthread_mutex_t lock;
         UserData *data;
 
 };

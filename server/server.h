@@ -23,7 +23,7 @@ Description : class, structures declarations and library files reside here.
 #define SUCCESS_MSG "ALL OK"
 #define FAILURE_MSG "NOT OK"
 #define MSG_SIZE 6 
-#define MAX_CONNECTIONS 20
+#define MAX_CONNECTIONS 100
 #define MAX_NAME_LENGTH 100
 #define DEFAULT_IP "127.0.0.1"
 
@@ -36,6 +36,11 @@ typedef struct Data
     char name[MAX_NAME_LENGTH];
 }data;
 
+typedef struct Connections
+{
+    int    data_socket_fd;
+    data   Data;
+}connections;
 class SocketServer
 {
     public:
@@ -46,13 +51,18 @@ class SocketServer
         int   Bind();
         int   Listen();
         void  Accept();
+        void  create_worker_thread(int);
+	    static void* connection_handler(void* data);
         void  ReceiveAndClose();
 
     private:
         int    port;
         int    socket_fd;
         int    data_socket_fd;
+        int    connection_count;
         struct sockaddr_in serv_addr;
+        pthread_t connection_threads[100];
+        connections user_data[100];
         data   Data;
 
 };
